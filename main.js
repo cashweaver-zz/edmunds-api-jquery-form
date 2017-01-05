@@ -1,4 +1,5 @@
 // TODO: replace API_KEY with the api key or somehow get it in here.
+const ourAPIKey = '12345';
 
 /*
  * Simple array generation
@@ -58,11 +59,17 @@ function encodeQueryData(data) {
 const edmundBaseUrl = 'https://api.edmunds.com/api/vehicle/v2';
 const edmundAPIRequest = ({ endpoint, parameters={}, success }) => {
   // Set the format to JSON if not otherwise specified
-  if (!('fmt' in parameters)) {
-    parameters.fmt = 'json';
-  }
+  const defaultParameters = {
+    fmt: 'json',
+    api_key: ourAPIKey,
+    view: 'basic',
+  };
 
-  const url = `${edmundBaseUrl}${endpoint}?${encodeQueryData(parameters)}`;
+  const url = `${edmundBaseUrl}${endpoint}?${encodeQueryData($.extend(
+    {},
+    defaultParameters,
+    parameters
+  ))}`;
   console.log('url', url);
 
   // $.get(url, success);
@@ -427,7 +434,12 @@ const edmundAPIRequest = ({ endpoint, parameters={}, success }) => {
 
 
 $(() => {
-  // Store our form elements for easy access
+  // ============================================
+  // Define helpful jQuery element selectors
+
+  const $form = $('#car-form');
+  const $formErrorAlert = $('#car-form-error-alert');
+
   const $formElements = {
     year: $('#vehicle-form-year'),
     make: $('#vehicle-form-make'),
@@ -439,6 +451,17 @@ $(() => {
     zipcode: $('#vehicle-form-zipcode'),
   };
 
+  const $resultElements = {
+    wrapper: $('#results-wrapper'),
+    maintenanceSchedules: $('#results-maintenance-schedules'),
+    recalls: $('#results-recalls'),
+    bulletins: $('#results-bulletins'),
+  };
+
+  // ============================================
+  // Helper functions (could go in another file but I've chosen to leave them in
+  // here for simplicity)
+
   const disableField = ($el) => {
     $el.prop('disabled', true);
   };
@@ -446,6 +469,36 @@ $(() => {
   const enableField = ($el) => {
     $el.prop('disabled', false);
   };
+
+  const showResults = () => {
+    $resultElements.wrapper.show();
+  };
+
+  const hideResults = () => {
+    $resultElements.wrapper.hide();
+  };
+
+  const showFormError = (html) => {
+    $formErrorAlert.html(html);
+    $formErrorAlert.show();
+  };
+
+  const hideFormError = () => {
+    $formErrorAlert.hide()
+  };
+
+  const handleInvalidField = ($el) => {
+    $el.parent().removeClass('has-success');
+    $el.parent().addClass('has-danger');
+  };
+
+  const handleValidField = ($el) => {
+    $el.parent().removeClass('has-danger');
+    $el.parent().addClass('has-success');
+  };
+
+  // ============================================
+  // Handle all changes in the form
 
   const fieldChangeHandler = (opts) => {
     if (opts.val === 'None') {
@@ -473,7 +526,7 @@ $(() => {
               const makeOptions = data.makes.map((make) => (
                 `<option value="${make.niceName}">${make.name}</option>`
               ))
-              makeOptions.unshift('<option value="None">None</option>')
+              makeOptions.unshift('<option value="none">None</option>')
 
               $formElements.make.html(makeOptions);
             },
@@ -501,7 +554,7 @@ $(() => {
               const modelOptions = data.models.map((model) => (
                 `<option value="${model.niceName}">${model.name}</option>`
               ))
-              modelOptions.unshift('<option value="None">None</option>')
+              modelOptions.unshift('<option value="none">None</option>')
 
               $formElements.model.html(modelOptions);
             },
@@ -524,14 +577,13 @@ $(() => {
           edmundAPIRequest({
             endpoint: `/${make}/${model}/${year}/styles`,
             parameters: {
-              // TODO: api_key: API_KEY,
-              style: 'basic',
+              view: 'basic',
             },
             success: (data) => {
               const styleOptions = data.styles.map((style) => (
                 `<option value="${style.id}">${style.name}</option>`
               ))
-              styleOptions.unshift('<option value="None">None</option>')
+              styleOptions.unshift('<option value="none">None</option>')
 
               $formElements.style.html(styleOptions);
             },
@@ -548,18 +600,16 @@ $(() => {
           resetFormTo($formElements.style);
         },
         proceed: (style) => {
-          console.log(style);
           edmundAPIRequest({
             endpoint: `/styles/${style}/engines`,
             parameters: {
-              // TODO: api_key: API_KEY,
-              style: 'basic',
+              view: 'basic',
             },
             success: (data) => {
               const engineOptions = data.engines.map((engine) => (
                 `<option value="${engine.id}">${engine.name}</option>`
               ))
-              engineOptions.unshift('<option value="None">None</option>')
+              engineOptions.unshift('<option value="none">None</option>')
 
               $formElements.engine.html(engineOptions);
             },
@@ -579,18 +629,17 @@ $(() => {
         },
         proceed: () => {
           const styleId = $formElements.style.val();
-          console.log(styleId);
+
           edmundAPIRequest({
             endpoint: `/styles/${styleId}/transmissions`,
             parameters: {
-              // TODO: api_key: API_KEY,
-              style: 'basic',
+              view: 'basic',
             },
             success: (data) => {
               const transmissionOptions = data.transmissions.map((transmission) => (
                 `<option value="${transmission.id}">${transmission.name} - ${transmission.transmissionType}</option>`
               ))
-              transmissionOptions.unshift('<option value="None">None</option>')
+              transmissionOptions.unshift('<option value="none">None</option>')
 
               $formElements.transmission.html(transmissionOptions);
             },
@@ -606,10 +655,7 @@ $(() => {
         backtrack: () => {
           resetFormTo($formElements.transmission);
         },
-        proceed: () => {
-          // TODO: Make API call to Edmunds and populate the model field
-          //resetFormTo($formElements.model);
-        },
+        proceed: () => {},
       });
     },
   };
@@ -679,6 +725,9 @@ $(() => {
       }
     }
   };
+
+  hideResults();
+  hideFormError();
   resetFormTo($formElements.year);
 
   // ============================================
@@ -688,8 +737,138 @@ $(() => {
   const years = range(2017, 1989).map((year) => (
     `<option value="${year}">${year}</option>`
   ));
-  years.unshift('<option value="None">None</option>')
+  years.unshift('<option value="none">None</option>')
   $formElements.year.html(years);
 
+  // ============================================
+  // Form
+
+  const validateForm = (onValid) => {
+    const nonSelectFormElements = [
+      'mileage',
+      'zipcode',
+    ];
+
+    let errorHtml = '';
+    let val;
+
+    // None of the select fields can be 'none'
+    for (key in $formElements) {
+      if (!nonSelectFormElements.includes(key)) {
+        val = $formElements[key].val();
+        if (val === 'none' || val === null) {
+          // Invalid field state!
+          errorHtml += `<p>Please select a ${key}</p>`;
+          handleInvalidField($formElements[key]);
+        } else {
+          handleValidField($formElements[key]);
+        }
+      }
+    }
+
+    // mileage
+    const mileage = $formElements.mileage.val();
+    if (mileage === '' || (!Number.parseInt(mileage) && Number.parseInt(mileage) !== 0)) {
+      // Invalid field state!
+      errorHtml += `<p>Please enter your mileage</p>`;
+      handleInvalidField($formElements.mileage);
+    } else {
+      handleValidField($formElements.mileage);
+    }
+
+    // zipocde
+    const zipcode = $formElements.zipcode.val();
+    if (zipcode === '' || !Number.parseInt(zipcode)) {
+      // Invalid field state!
+      errorHtml += `<p>Please enter your zip code</p>`;
+      handleInvalidField($formElements.zipcode);
+    } else {
+      handleValidField($formElements.zipcode);
+    }
+
+    if (errorHtml !== '') {
+      showFormError(errorHtml);
+    } else {
+      onValid();
+    }
+  };
+
+  $form.on('submit', function (e) {
+    e.preventDefault();
+
+    validateForm(() => {
+      // Valid form
+      const modelyearid = $formElements.style.val();
+
+      const totalAPIRequests = 3;
+      let apiResponsesReceived = 0;
+
+      edmundAPIRequest({
+        endpoint: '/maintenance/actionrepository/findbymodelyearid/',
+        parameters: {
+          modelyearid,
+        },
+        success: (data) => {
+          apiResponsesReceived += 1;
+
+          const maintenanceScheduleList = data.actionHolder.map((action) => (
+            `<li>${action.item} - ${action.itemDescription}</li>`
+          ));
+          $resultElements.maintenanceSchedules.html(`<ul>${maintenanceScheduleList}</ul>`);
+
+          if (apiResponsesReceived === totalAPIRequests) {
+            showResults();
+          }
+        },
+      });
+
+      edmundAPIRequest({
+        endpoint: '/maintenance/reacallrepository/findbymodelyearid/',
+        parameters: {
+          modelyearid,
+        },
+        success: (data) => {
+          apiResponsesReceived += 1;
+
+          const recalls = data.recallHolder.map((recall) => (
+            `
+            <h5>${recall.recallNumber} - ${recall.componentDescription}</h5>
+            <p><strong>${recall.defectConsequence}</strong></p>
+            <p>${recall.recallCorrectiveAction}</p>
+            `
+          ));
+          $resultElements.recalls.html(recalls);
+
+          if (apiResponsesReceived === totalAPIRequests) {
+            showResults();
+          }
+        },
+      });
+
+      edmundAPIRequest({
+        endpoint: '/maintenance/servicebulletinrepository/findbymodelyearid/',
+        parameters: {
+          modelyearid,
+        },
+        success: (data) => {
+          apiResponsesReceived += 1;
+
+          const bulletins = data.servicebulletinholder.map((bulletin) => (
+            `
+            <h5>${bulletin.bulletinNumber} - ${bulletin.componentDescription}</h5>
+            <p>${bulletin.summaryText}</p>
+            `
+          ));
+          $resultElements.bulletins.html(bulletins);
+
+          if (apiResponsesReceived === totalAPIRequests) {
+            showResults();
+          }
+        },
+      });
+
+
+    });
+  });
 });
 
