@@ -40,6 +40,7 @@ const range = (start, end, step) => {
   return r;
 };
 
+
 $(() => {
   // Store our form elements for easy access
   const $formElements = {
@@ -47,10 +48,50 @@ $(() => {
     make: $('#vehicle-form-make'),
     model: $('#vehicle-form-model'),
     trim: $('#vehicle-form-trim'),
+    engine: $('#vehicle-form-engine'),
     transmission: $('#vehicle-form-transmission'),
     mileage: $('#vehicle-form-mileage'),
     zipcode: $('#vehicle-form-zipcode'),
   };
+
+  const disableField = ($el) => {
+    $el.prop('disabled', true);
+  };
+
+  const enableField = ($el) => {
+    $el.prop('disabled', false);
+  };
+
+  const handleChange = {
+    year: function () {
+      const val = $(this).val();
+
+      console.log(val);
+
+      if (val === 'None') {
+        init();
+      } else {
+        enableField($formElements.make);
+        // TODO: Make API call to Edmunds
+      }
+    },
+  };
+
+  // ============================================
+  // Setup
+
+  const init = () => {
+    // Disable all fields except Year
+    for (key in $formElements) {
+      if (key !== 'year') {
+        disableField($formElements[key]);
+      }
+    }
+  };
+  init();
+
+  // ============================================
+  // Year
 
   // Populate the Year field
   const years = range(2017, 1989).map((year) => (
@@ -58,5 +99,9 @@ $(() => {
   ));
   years.unshift('<option>None</option>')
   $formElements.year.html(years);
+
+
+  // Attach listener
+  $formElements.year.on('change', handleChange.year);
 });
 
