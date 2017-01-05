@@ -62,33 +62,155 @@ $(() => {
     $el.prop('disabled', false);
   };
 
+  const fieldChangeHandler = (opts) => {
+    if (opts.val === 'None') {
+      opts.backtrack(opts.val);
+    } else {
+      opts.proceed(opts.val);
+    }
+  };
+
   const handleChange = {
     year: function () {
-      const val = $(this).val();
-
-      console.log(val);
-
-      if (val === 'None') {
-        init();
-      } else {
-        enableField($formElements.make);
-        // TODO: Make API call to Edmunds
-      }
+      fieldChangeHandler({
+        val: $(this).val(),
+        backtrack: () => {
+          resetFormTo($formElements.year);
+        },
+        proceed: () => {
+          // TODO: Make API call to Edmunds and populate the make field
+          resetFormTo($formElements.make);
+        },
+      });
+    },
+    make: function () {
+      fieldChangeHandler({
+        val: $(this).val(),
+        backtrack: () => {
+          resetFormTo($formElements.make);
+        },
+        proceed: () => {
+          // TODO: Make API call to Edmunds and populate the model field
+          resetFormTo($formElements.model);
+        },
+      });
+    },
+    model: function () {
+      fieldChangeHandler({
+        val: $(this).val(),
+        backtrack: () => {
+          resetFormTo($formElements.model);
+        },
+        proceed: () => {
+          // TODO: Make API call to Edmunds and populate the model field
+          resetFormTo($formElements.trim);
+        },
+      });
+    },
+    trim: function () {
+      fieldChangeHandler({
+        val: $(this).val(),
+        backtrack: () => {
+          resetFormTo($formElements.trim);
+        },
+        proceed: () => {
+          // TODO: Make API call to Edmunds and populate the model field
+          resetFormTo($formElements.engine);
+        },
+      });
+    },
+    engine: function () {
+      fieldChangeHandler({
+        val: $(this).val(),
+        backtrack: () => {
+          resetFormTo($formElements.engine);
+        },
+        proceed: () => {
+          // TODO: Make API call to Edmunds and populate the model field
+          resetFormTo($formElements.transmission);
+        },
+      });
+    },
+    transmission: function () {
+      fieldChangeHandler({
+        val: $(this).val(),
+        backtrack: () => {
+          resetFormTo($formElements.transmission);
+        },
+        proceed: () => {
+          // TODO: Make API call to Edmunds and populate the model field
+          //resetFormTo($formElements.model);
+        },
+      });
     },
   };
+
+  // Attach listeners
+  for (key in $formElements) {
+    if (typeof handleChange[key] !== 'undefined') {
+      $formElements[key].on('change', handleChange[key]);
+    }
+  }
 
   // ============================================
   // Setup
 
-  const init = () => {
-    // Disable all fields except Year
+  const resetFormTo = ($el) => {
+    let keysToIgnore = [];
+    if ($el === $formElements.year) {
+      keysToIgnore = [
+        'year',
+      ];
+    } else if ($el === $formElements.make) {
+      keysToIgnore = [
+        'year',
+        'make',
+      ];
+    } else if ($el === $formElements.model) {
+      keysToIgnore = [
+        'year',
+        'make',
+        'model',
+      ];
+    } else if ($el === $formElements.trim) {
+      keysToIgnore = [
+        'year',
+        'make',
+        'model',
+        'trim',
+      ];
+    } else if ($el === $formElements.engine) {
+      keysToIgnore = [
+        'year',
+        'make',
+        'model',
+        'trim',
+        'engine',
+      ];
+    } else if ($el === $formElements.transmission) {
+      keysToIgnore = [
+        'year',
+        'make',
+        'model',
+        'trim',
+        'engine',
+        'transmission',
+      ];
+    }
+
+    // Always ignore mileage and zipcode. They never need to be disabled.
+    keysToIgnore = keysToIgnore.concat(['mileage', 'zipcode']);
+
+    // Disable fields
     for (key in $formElements) {
-      if (key !== 'year') {
+      if (keysToIgnore.includes(key)) {
+        enableField($formElements[key]);
+      } else {
         disableField($formElements[key]);
       }
     }
   };
-  init();
+  resetFormTo($formElements.year);
 
   // ============================================
   // Year
@@ -100,8 +222,5 @@ $(() => {
   years.unshift('<option>None</option>')
   $formElements.year.html(years);
 
-
-  // Attach listener
-  $formElements.year.on('change', handleChange.year);
 });
 
