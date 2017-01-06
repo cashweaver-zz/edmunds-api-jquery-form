@@ -1,5 +1,5 @@
 // TODO: replace API_KEY with the api key or somehow get it in here.
-const ourAPIKey = 'mfrbhwd66zj3s5usybx3gmmx';
+const ourAPIKey = 'YOUR_API_KEY_GOES_HERE';
 
 /*
  * Simple array generation
