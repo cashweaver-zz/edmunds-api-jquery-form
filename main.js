@@ -1,5 +1,5 @@
 // TODO: replace API_KEY with the api key or somehow get it in here.
-const ourAPIKey = '12345';
+const ourAPIKey = 'mfrbhwd66zj3s5usybx3gmmx';
 
 /*
  * Simple array generation
@@ -70,9 +70,9 @@ const edmundAPIRequest = ({ endpoint, parameters={}, success }) => {
     defaultParameters,
     parameters
   ))}`;
-  console.log('url', url);
 
-  // $.get(url, success);
+  $.get(url, success);
+  /* Mocking out the API calls
   if (endpoint === '/makes') {
     success({
    "makes":[
@@ -1058,6 +1058,7 @@ const edmundAPIRequest = ({ endpoint, parameters={}, success }) => {
     }]
     });
   }
+    */
 };
 
 
@@ -1152,16 +1153,18 @@ $(() => {
               view: 'basic',
             },
             success: (data) => {
+              console.log('SUCCESS');
+              console.log('data', data);
               const makeOptions = data.makes.map((make) => (
                 `<option value="${make.niceName}">${make.name}</option>`
               ))
               makeOptions.unshift('<option value="none">None</option>')
 
               $formElements.make.html(makeOptions);
+              resetFormTo($formElements.make);
             },
           });
 
-          resetFormTo($formElements.make);
         },
       });
     },
@@ -1186,11 +1189,9 @@ $(() => {
               modelOptions.unshift('<option value="none">None</option>')
 
               $formElements.model.html(modelOptions);
+              resetFormTo($formElements.model);
             },
           });
-
-          resetFormTo($formElements.model);
-
         },
       });
     },
@@ -1215,10 +1216,9 @@ $(() => {
               styleOptions.unshift('<option value="none">None</option>')
 
               $formElements.style.html(styleOptions);
+              resetFormTo($formElements.style);
             },
           });
-
-          resetFormTo($formElements.style);
         },
       });
     },
@@ -1235,18 +1235,19 @@ $(() => {
               view: 'basic',
             },
             success: (data) => {
+              console.log('engine data', data);
               const engineOptions = data.engines.map((engine) => (
-                `<option value="${engine.id}">${engine.name}</option>`
+                `<option value="${engine.id}">${engine.cylinder} Cyl ${engine.size} Litre</option>`
               ))
               engineOptions.unshift('<option value="none">None</option>')
 
               $formElements.engine.html(engineOptions);
+
+              // I could enable both the transmission field and the engine field at
+              // this point but choose not to for simplicity.
+              resetFormTo($formElements.engine);
             },
           });
-
-          // I could enable both the transmission field and the engine field at
-          // this point but choose not to for simplicity.
-          resetFormTo($formElements.engine);
         },
       });
     },
@@ -1271,10 +1272,9 @@ $(() => {
               transmissionOptions.unshift('<option value="none">None</option>')
 
               $formElements.transmission.html(transmissionOptions);
+              resetFormTo($formElements.transmission);
             },
           });
-
-          resetFormTo($formElements.transmission);
         },
       });
     },
